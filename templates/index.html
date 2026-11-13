@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Devin Counter</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3E%3Crect x=%273%27 y=%273%27 width=%2710%27 height=%2710%27 transform=%27rotate(45 8 8)%27 fill=%27%23d8cdb6%27/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="grid-bg" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <h1>DEVIN<span class="thin">COUNTER</span></h1>
+    </div>
+    <div class="topbar-right">
+    <button class="mute-btn" id="muteBtn" type="button" aria-pressed="false" title="Mute alarm (M)">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <polygon class="spk" points="3,9 7,9 12,4 12,20 7,15 3,15" />
+        <g class="waves"><path d="M15.5 8.5 L17.5 12 L15.5 15.5" /><path d="M18.5 6 L21.5 12 L18.5 18" /></g>
+        <g class="cross"><line x1="15" y1="9" x2="21" y2="15" /><line x1="21" y1="9" x2="15" y2="15" /></g>
+      </svg>
+      <span id="muteText">SOUND ON</span>
+    </button>
+    <div class="status">
+      <span class="status-dot" id="statusDot"></span>
+      <span id="statusText">STANDBY</span>
+    </div>
+    </div>
+  </header>
+
+  <main class="layout">
+    <!-- Analog stopwatch -->
+    <section class="panel watch-panel" aria-label="Analog stopwatch">
+      <div class="panel-label"><span>01</span> CHRONOGRAPH
+        <button class="focus-btn" id="focusBtn" type="button" aria-pressed="false" title="Full screen (F)">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path class="expand" d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" />
+            <path class="collapse" d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5" />
+          </svg>
+          <span id="focusText">FULL SCREEN</span>
+        </button>
+      </div>
+      <svg id="stopwatch" class="stopwatch" viewBox="-220 -262 440 486" role="img" aria-label="Stopwatch">
+        <!-- crown + pushers -->
+        <g class="crown">
+          <rect x="-14" y="-236" width="28" height="22" />
+          <rect x="-24" y="-256" width="48" height="16" />
+          <rect x="-8" y="-214" width="16" height="12" />
+        </g>
+        <g class="pusher" transform="rotate(42)">
+          <rect x="-9" y="-222" width="18" height="18" />
+        </g>
+        <g class="pusher" transform="rotate(-42)">
+          <rect x="-9" y="-222" width="18" height="18" />
+        </g>
+
+        <!-- case -->
+        <circle class="case" r="204" />
+        <circle class="bezel" r="194" />
+        <circle class="progress-track" r="184" />
+        <circle class="progress-ring" id="progressRing" r="184" transform="rotate(-90)" />
+        <circle class="face" r="172" />
+        <circle class="face-inner" r="118" />
+
+        <g id="ticks"></g>
+        <g id="numerals"></g>
+
+        <!-- sub dial: hours -->
+        <g transform="translate(0 70)">
+          <circle class="subdial" r="40" />
+          <g id="subTicks"></g>
+          <text class="subdial-label" y="-17">HRS</text>
+          <g id="subNumerals"></g>
+          <polygon id="hourHand" class="sub-hand" points="-2.5,6 2.5,6 1,-28 0,-32 -1,-28" />
+          <circle class="sub-pin" r="3.5" />
+        </g>
+
+        <!-- digital readout on face -->
+        <text id="faceReadout" class="face-readout" y="-58">00:00:00</text>
+        <text class="face-caption" y="-38">REMAINING</text>
+
+        <!-- minute hand -->
+        <g id="minuteHand" class="minute-hand">
+          <polygon points="0,20 -7,0 -4,-104 0,-118 4,-104 7,0" />
+          <line x1="0" y1="-14" x2="0" y2="-100" />
+        </g>
+
+        <!-- sweep (seconds) hand -->
+        <g id="sweepHand" class="sweep-hand">
+          <polygon points="-2.2,26 2.2,26 1.2,-158 0,-166 -1.2,-158" />
+          <rect x="-4" y="12" width="8" height="16" />
+        </g>
+        <circle class="pin-outer" r="9" />
+        <circle class="pin-inner" r="3.5" />
+      </svg>
+      <div class="progress-meta">
+        <span>ELAPSED <b id="elapsedText">00:00:00</b></span>
+        <span class="divider"></span>
+        <span>PROGRESS <b id="pctText">0%</b></span>
+      </div>
+      <div class="focus-controls">
+        <button class="btn primary" id="focusStartBtn" type="button">START</button>
+        <button class="btn" id="focusResetBtn" type="button">RESET</button>
+      </div>
+    </section>
+
+    <!-- Digital setter -->
+    <section class="panel set-panel" aria-label="Set countdown time">
+      <div class="panel-label"><span>02</span> SET DURATION</div>
+
+      <div class="digital" id="digital">
+        <div class="unit" data-unit="0">
+          <button class="chev up" data-unit="0" data-dir="1" aria-label="Increase hours"></button>
+          <div class="digits" tabindex="0" data-unit="0" aria-label="Hours"></div>
+          <button class="chev down" data-unit="0" data-dir="-1" aria-label="Decrease hours"></button>
+          <div class="unit-label">HRS</div>
+        </div>
+        <div class="colon" aria-hidden="true"><i></i><i></i></div>
+        <div class="unit" data-unit="1">
+          <button class="chev up" data-unit="1" data-dir="1" aria-label="Increase minutes"></button>
+          <div class="digits" tabindex="0" data-unit="1" aria-label="Minutes"></div>
+          <button class="chev down" data-unit="1" data-dir="-1" aria-label="Decrease minutes"></button>
+          <div class="unit-label">MIN</div>
+        </div>
+        <div class="colon" aria-hidden="true"><i></i><i></i></div>
+        <div class="unit" data-unit="2">
+          <button class="chev up" data-unit="2" data-dir="1" aria-label="Increase seconds"></button>
+          <div class="digits" tabindex="0" data-unit="2" aria-label="Seconds"></div>
+          <button class="chev down" data-unit="2" data-dir="-1" aria-label="Decrease seconds"></button>
+          <div class="unit-label">SEC</div>
+        </div>
+      </div>
+
+      <div class="presets" id="presets">
+        <button data-secs="60">01M</button>
+        <button data-secs="300">05M</button>
+        <button data-secs="600">10M</button>
+        <button data-secs="1500">25M</button>
+        <button data-secs="3600">01H</button>
+      </div>
+
+      <div class="actions">
+        <button class="btn primary" id="startBtn">START</button>
+        <button class="btn" id="resetBtn">RESET</button>
+      </div>
+
+      <p class="hint">
+        CLICK A FIELD &middot; TYPE DIGITS OR SCROLL &middot; ARROWS ADJUST &middot; SPACE START/PAUSE &middot; ESC RESET &middot; M MUTE &middot; F FULL SCREEN
+      </p>
+    </section>
+  </main>
+
+  <footer class="footbar">
+    <span>SYS.LOCAL</span>
+    <span class="rule"></span>
+    <span id="clockNow">--:--:--</span>
+  </footer>
+
+  <div class="timesup" id="timesUp" role="alertdialog" aria-live="assertive" hidden>
+    <div class="timesup-text">TIME'S UP!!</div>
+    <div class="timesup-hint">CLICK OR PRESS ANY KEY TO RESET</div>
+  </div>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
